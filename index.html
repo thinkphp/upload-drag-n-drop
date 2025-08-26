@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Upload - Drag & Drop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .upload-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .drop-zone {
+            border: 3px dashed #cbd5e0;
+            border-radius: 16px;
+            padding: 60px 20px;
+            text-align: center;
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drop-zone::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg at 50% 50%, transparent, rgba(102, 126, 234, 0.1), transparent);
+            animation: rotate 20s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @keyframes rotate {
+            to { transform: rotate(360deg); }
+        }
+
+        .drop-zone.drag-over {
+            border-color: #667eea;
+            background: linear-gradient(145deg, #f0f4ff, #e6efff);
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .drop-zone.drag-over::before {
+            opacity: 1;
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .drop-zone:hover .upload-icon {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .upload-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .upload-text {
+            color: #4a5568;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-subtext {
+            color: #718096;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .browse-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .browse-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-container {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8fafc;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            aspect-ratio: 1;
+        }
+
+        .preview-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .remove-btn:hover {
+            background: rgba(220, 53, 69, 1);
+            transform: scale(1.1);
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            margin-top: 20px;
+            width: 100%;
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .status-message {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-success {
+            background: rgba(72, 187, 120, 0.1);
+            color: #38a169;
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .status-error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .upload-container {
+                padding: 20px;
+            }
+            
+            .drop-zone {
+                padding: 40px 15px;
+                min-height: 250px;
+            }
+            
+            .preview-container {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h1>📸 Upload Poze</h1>
+        
+        <div class="drop-zone" id="dropZone">
+            <div class="upload-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                </svg>
+            </div>
+            <div class="upload-text">Drag & drop pozele aici</div>
+            <div class="upload-subtext">sau</div>
+            <button class="browse-btn" onclick="document.getElementById('fileInput').click()">
+                Alege Fișiere
+            </button>
+        </div>
+        
+        <input type="file" id="fileInput" multiple accept="image/*">
+        
+        <div class="preview-container" id="previewContainer"></div>
+        
+        <button class="upload-btn" id="uploadBtn" onclick="uploadFiles()" disabled>
+            🚀 Upload Poze
+        </button>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Drag and Drop Events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        });
+
+        // File Input Change
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            imageFiles.forEach(file => {
+                if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                    createPreview(file);
+                }
+            });
+            
+            updateUploadButton();
+        }
+
+        function createPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}" alt="${file.name}">
+                    <button class="remove-btn" onclick="removeFile('${file.name}', ${file.size})">×</button>
+                `;
+                previewContainer.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeFile(fileName, fileSize) {
+            selectedFiles = selectedFiles.filter(file => !(file.name === fileName && file.size === fileSize));
+            refreshPreviews();
+            updateUploadButton();
+        }
+
+        function refreshPreviews() {
+            previewContainer.innerHTML = '';
+            selectedFiles.forEach(file => createPreview(file));
+        }
+
+        function updateUploadButton() {
+            uploadBtn.disabled = selectedFiles.length === 0;
+            uploadBtn.textContent = selectedFiles.length > 0 ? 
+                `🚀 Upload ${selectedFiles.length} Poze` : '🚀 Upload Poze';
+        }
+
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${isError ? 'status-error' : 'status-success'}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) return;
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('photos[]', file);
+            });
+
+            uploadBtn.disabled = true;
+            progressBar.style.display = 'block';
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressFill.style.width = percentComplete + '%';
+                    }
+                });
+
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        progressBar.style.display = 'none';
+                        progressFill.style.width = '0%';
+                        uploadBtn.disabled = false;
+                        
+                        if (xhr.status === 200) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                if (response.success) {
+                                    showStatus(`✅ ${selectedFiles.length} poze au fost uploadate cu succes!`);
+                                    selectedFiles = [];
+                                    previewContainer.innerHTML = '';
+                                    updateUploadButton();
+                                } else {
+                                    showStatus(`❌ Eroare: ${response.message}`, true);
+                                }
+                            } catch (e) {
+                                showStatus('✅ Pozele au fost uploadate cu succes!');
+                                selectedFiles = [];
+                                previewContainer.innerHTML = '';
+                                updateUploadButton();
+                            }
+                        } else {
+                            showStatus('❌ Eroare la upload. Verifică conexiunea.', true);
+                        }
+                    }
+                };
+
+                xhr.open('POST', 'upload.php', true);
+                xhr.send(formData);
+                
+            } catch (error) {
+                progressBar.style.display = 'none';
+                progressFill.style.width = '0%';
+                uploadBtn.disabled = false;
+                showStatus('❌ Eroare neașteptată la upload.', true);
+                console.error('Upload error:', error);
+            }
+        }
+
+        // Click on drop zone to open file dialog
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+    </script>
+</body>
+</html>
